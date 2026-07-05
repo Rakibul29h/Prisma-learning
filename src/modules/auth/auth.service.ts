@@ -1,27 +1,40 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "../../lib/prisma";
-import type { ILoginUser } from "./auth.interface"
+import type { ILoginUser } from "./auth.interface";
+import jwt, { type SignOptions } from "jsonwebtoken";
+import config from "../../config";
+import { jwtSign } from "../../Utils/jwt";
 
-const loginUser=async(payload:ILoginUser)=>{
+const loginUser = async (payload: ILoginUser) => {
+  const { email, password } = payload;
 
-    const{email,password}=payload;
+  // is exists;
 
-    // is exists;
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { email },
+  });
 
-    const user= await prisma.user.findUniqueOrThrow({
-        where: {email},
-        
-    })
+  const isPasswordMatch = await bcrypt.compare(password, user.password);
 
-    const isPasswordMatch= await bcrypt.compare(password,user.password);
+  if (!isPasswordMatch) {
+    throw new Error("Password not match");
+  }
 
-    if(!isPasswordMatch){
-        throw new Error("Password not match")
-    }
+  const jwtPayload = {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    name: user.name,
+  };
+  const accessToken = jwtSign(jwtPayload,config.jwt_access_secret,config.jwt_access_expires_in as SignOptions)
 
-    return user;
-}
+  const refreshToken = jwtSign(jwtPayload,config.jwt_refresh_secret,config.jwt_refresh_expires_in as SignOptions)
+  return {
+    accessToken,
+    refreshToken, 
+  };
+}; 
 
-export const authService={
-    loginUser
-}
+export const authService = {
+  loginUser,
+};

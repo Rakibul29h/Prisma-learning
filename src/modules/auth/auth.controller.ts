@@ -6,13 +6,26 @@ import { sendResponse } from "../../Utils/sendResponse";
 const loginUser= catchAsync(async(req:Request,res:Response,next:NextFunction)=>{
     const payload=req.body;
 
-    const loginResult= await authService.loginUser(payload);
+    const {accessToken,refreshToken}= await authService.loginUser(payload);
+
+    res.cookie("accessToken",accessToken,{
+        httpOnly:true,
+        secure:false,
+        sameSite:"none",
+        maxAge: 24*1000*60*60
+    })
+    res.cookie("refreshToken",refreshToken,{
+        httpOnly:true,
+        secure:false,
+        sameSite:"none",
+        maxAge: 24*1000*60*60*7
+    })
 
     sendResponse(res,{
         success:true,
         statusCode:200,
         message:"User login successfully",
-        data:{loginResult},
+        data:{accessToken,refreshToken},
     })
 })
 
