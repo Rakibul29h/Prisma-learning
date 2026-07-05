@@ -41,7 +41,7 @@ export const auth = (...requiredRoles : Role[]) => {
     if ( requiredRoles.length && !requiredRoles.includes(role)) {
       throw new Error("Forbidden. You don't have permission to access")
     }
-    const user = await prisma.user.findUniqueOrThrow({
+    const user = await prisma.user.findUnique({
         where:{
             id,
             email,name,role
