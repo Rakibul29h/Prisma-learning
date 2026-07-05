@@ -1,9 +1,26 @@
-import { Router, type Request, type Response } from "express";
+import {
+  Router,
+} from "express";
 import { userController } from "./user.controller";
 
-const router = Router()
+import { Role } from "../../../generated/prisma/enums";
 
-router.post("/register",userController.registerUser)
-router.get("/me",userController.getMyProfile)
+import { auth } from "../../middleware/auth";
 
-export const userRoutes=router;
+const router = Router();
+
+
+
+router.post("/register", userController.registerUser);
+
+
+router.get(
+  "/me",auth(Role.ADMIN,Role.USER,Role.AUTHOR),
+  userController.getMyProfile,
+);
+
+router.put("/me",auth(Role.ADMIN,Role.USER,Role.AUTHOR),
+  userController.updateMyProfile,
+);
+
+export const userRoutes = router;
