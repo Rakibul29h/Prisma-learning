@@ -9,7 +9,7 @@ router.get("/",postController.getPosts);
 
 router.get("/stats",auth(Role.ADMIN),postController.getPostStats);
 
-router.get("/my-posts",postController.myPost);
+router.get("/my-posts",auth(Role.ADMIN,Role.USER,Role.AUTHOR),postController.myPost);
 
 router.get("/:postId",postController.getSinglePost  )
 
