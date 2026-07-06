@@ -1,55 +1,76 @@
 import type {ICreatePostPayload, IUpdatePostPayload} from "./post.interface";
 import {prisma} from "../../lib/prisma";
+import {CommentStatus} from "../../../generated/prisma/enums";
 
-const getPosts = async ()=>{
-    const posts= await prisma.post.findMany({
-        include:{
-            author:{
-                omit:{
-                    password:true
+const getPosts = async () => {
+    const posts = await prisma.post.findMany({
+        include: {
+            author: {
+                omit: {
+                    password: true
                 }
             },
-            commnets:true,
+            commnets: true,
         }
     })
     return posts;
 }
 
-const getSinglePost = async function(postId:string){
+const getSinglePost = async function (postId: string) {
 
 
-    const post = await prisma.post.findUniqueOrThrow({
-        where:{
-            id:postId
-        }
-    })
-
-    const updatedPost = await prisma.post.update({
-        where:{
-            id:postId,
-        },
-        data:{
-            views:{
-                increment:1
-            }
-        },
-        include:{
-            author:{
-                omit:{
-                    password:true
+    const transactionResult= await prisma.$transaction(
+        async (tx)=>{
+            await tx.post.update({
+                where: {
+                    id: postId,
+                },
+                data: {
+                    views: {
+                        increment: 1
+                    }
                 }
-            },
-            commnets:true,
+
+            })
+            const post= await tx.post.findUniqueOrThrow({
+                where:{id:postId},
+                include:{
+                    author: {
+                        omit: {
+                            password: true
+                        }
+                    },
+                    commnets:{
+                        where:{
+                            status:CommentStatus.APPROVED,
+                        },
+                        orderBy:{
+                            createdAt:"desc"
+                        }
+                    },
+                    _count:{
+                        select:{
+                            commnets:true
+                        }
+                    }
+                }
+            })
+
+            return post
         }
-    })
-    return updatedPost;
+    )
+
+
+
+
+    return transactionResult;
 }
 
-const createPost = async function(payload:ICreatePostPayload,userId:string){
+const createPost = async function (payload: ICreatePostPayload, userId: string) {
     const result = await prisma.post.create({
-        data:{
+        data: {
             ...payload,
-            authorId:userId
+            authorId: userId
         }
     });
 
@@ -57,26 +78,26 @@ const createPost = async function(payload:ICreatePostPayload,userId:string){
 }
 
 
-const getMyPosts = async (authorId:string)=>{
+const getMyPosts = async (authorId: string) => {
     const posts = await prisma.post.findMany({
-        where:{
-            authorId:authorId,
+        where: {
+            authorId: authorId,
         },
-        orderBy:{
-            createdAt:"desc"
+        orderBy: {
+            createdAt: "desc"
         },
-        include:{
-            commnets:true,
-            author:{
-                omit:{
-                    password:true
+        include: {
+            commnets: true,
+            author: {
+                omit: {
+                    password: true
                 }
             },
-           _count:{
-                select:{
-                    commnets:true
+            _count: {
+                select: {
+                    commnets: true
                 }
-           }
+            }
         }
     })
     return posts;
@@ -84,51 +105,49 @@ const getMyPosts = async (authorId:string)=>{
 }
 
 
+const deletePost = async function (postId: string, authorId: string, isAdmin: boolean) {
 
-
-const deletePost = async function(postId:string,authorId:string,isAdmin:boolean){
-
-    const post= await prisma.post.findUniqueOrThrow({
-        where:{
-            id:postId,
+    const post = await prisma.post.findUniqueOrThrow({
+        where: {
+            id: postId,
         }
     })
 
-    if(!isAdmin && post.authorId!==authorId){
+    if (!isAdmin && post.authorId !== authorId) {
         throw new Error("Forbidden Access.")
     }
 
     const result = await prisma.post.delete({
-        where:{
-            id:postId,
+        where: {
+            id: postId,
         }
     })
 
 
 }
 
-const updatePost = async function(postId:string,payload:IUpdatePostPayload,authorId:string,isAdmin:boolean){
+const updatePost = async function (postId: string, payload: IUpdatePostPayload, authorId: string, isAdmin: boolean) {
 
     const post = await prisma.post.findUniqueOrThrow({
-        where:{
-            id:postId,
+        where: {
+            id: postId,
         }
     })
 
-    if(!isAdmin && post.authorId!==authorId){
+    if (!isAdmin && post.authorId !== authorId) {
 
         throw new Error("Forbidden access");
     }
 
     const result = await prisma.post.update({
-        where:{id:postId},
-        data:payload,
+        where: {id: postId},
+        data: payload,
     })
 
     return result;
 }
 
-const getPostStat=async function(){
+const getPostStat = async function () {
 
 }
 export const postService = {
