@@ -60,9 +60,31 @@ const createPost = async (req: Request, res: Response) => {
     })
 }
 const updatePost = async (req: Request, res: Response) => {
-
+    const authorId=req.user?.id as string;
+    const postId=req.params.postId;
+    const isAdmin=req.user?.role ==="ADMIN";
+    const payload=req.body;
+    const result=await postService.updatePost(postId as string,payload,authorId,isAdmin);
+    sendResponse(res,{
+        success:true,
+        statusCode:200,
+        message:"Post Updated successfully",
+        data:result,
+    })
 }
 const deletePost = async (req: Request, res: Response) => {
+
+    const authorId=req.user?.id as string;
+    const postId=req.params.postId;
+    const isAdmin=req.user?.role ==="ADMIN";
+
+  await postService.deletePost(postId as string,authorId,isAdmin);
+    sendResponse(res,{
+        success:true,
+        statusCode:200,
+        message:"Post deleted successfully",
+        data:null
+    })
 
 }
 

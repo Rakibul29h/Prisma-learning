@@ -1,4 +1,4 @@
-import type {ICreatePostPayload} from "./post.interface";
+import type {ICreatePostPayload, IUpdatePostPayload} from "./post.interface";
 import {prisma} from "../../lib/prisma";
 
 const getPosts = async ()=>{
@@ -82,12 +82,50 @@ const getMyPosts = async (authorId:string)=>{
     return posts;
 
 }
-const deletePost = async function(){
+
+
+
+
+const deletePost = async function(postId:string,authorId:string,isAdmin:boolean){
+
+    const post= await prisma.post.findUniqueOrThrow({
+        where:{
+            id:postId,
+        }
+    })
+
+    if(!isAdmin && post.authorId!==authorId){
+        throw new Error("Forbidden Access.")
+    }
+
+    const result = await prisma.post.delete({
+        where:{
+            id:postId,
+        }
+    })
+
 
 }
 
-const updatePost = async function(){
+const updatePost = async function(postId:string,payload:IUpdatePostPayload,authorId:string,isAdmin:boolean){
 
+    const post = await prisma.post.findUniqueOrThrow({
+        where:{
+            id:postId,
+        }
+    })
+
+    if(!isAdmin && post.authorId!==authorId){
+
+        throw new Error("Forbidden access");
+    }
+
+    const result = await prisma.post.update({
+        where:{id:postId},
+        data:payload,
+    })
+
+    return result;
 }
 
 const getPostStat=async function(){
@@ -99,7 +137,8 @@ export const postService = {
     getSinglePost,
     deletePost,
     getPostStat,
-    getMyPosts
+    getMyPosts,
+    updatePost
 
 
 }
